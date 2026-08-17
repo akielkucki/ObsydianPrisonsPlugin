@@ -10,6 +10,7 @@ import com.obsydian.obsydianPrisons.pickaxe.listeners.MultiToolListener;
 import com.obsydian.obsydianPrisons.pickaxe.listeners.PickaxeBreakListeners;
 import com.obsydian.obsydianPrisons.sell.cfg.ConfigManager;
 import com.obsydian.obsydianPrisons.sell.commands.SellCommand;
+import com.obsydian.obsydianPrisons.server.listeners.ServerJoinListener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +59,7 @@ public final class ObsydianPrisons extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new JoinPickaxeListener(),this);
         getServer().getPluginManager().registerEvents(new PickaxeBreakListeners(this),this);
         getServer().getPluginManager().registerEvents(new EnchantMenuListeners(),this);
+        getServer().getPluginManager().registerEvents(new ServerJoinListener(this),this);
 
         // Command registry
         getCommand("sell").setExecutor(new SellCommand());

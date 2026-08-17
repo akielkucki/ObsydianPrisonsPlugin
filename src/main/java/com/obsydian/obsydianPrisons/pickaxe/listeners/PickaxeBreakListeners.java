@@ -1,8 +1,8 @@
 package com.obsydian.obsydianPrisons.pickaxe.listeners;
 
 import com.obsydian.obsydianPrisons.ObsydianPrisons;
+import com.obsydian.obsydianPrisons.mines.MineRegionManager;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Location;
@@ -23,11 +23,13 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class PickaxeBreakListeners implements Listener {
-    private ObsydianPrisons plugin;
+    private final ObsydianPrisons plugin;
+    private final MineRegionManager mineRegionManager;
     ThreadLocalRandom rand = ThreadLocalRandom.current();
 
-    public PickaxeBreakListeners(ObsydianPrisons plugin) {
+    public PickaxeBreakListeners(ObsydianPrisons plugin, MineRegionManager mineRegionManager) {
         this.plugin = plugin;
+        this.mineRegionManager = mineRegionManager;
     }
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
@@ -46,9 +48,12 @@ public class PickaxeBreakListeners implements Listener {
         );
 
     }
+
     @EventHandler
     public void addDropsToInventory(BlockDropItemEvent e) {
         Player p = e.getPlayer();
+        if (!mineRegionManager.isMineBlock(e.getBlock())) return;
+
         List<ItemStack> drops = e.getItems().stream().map(item -> {
             ItemStack tool = p.getInventory().getItemInMainHand();
             ItemStack itemStack = item.getItemStack();

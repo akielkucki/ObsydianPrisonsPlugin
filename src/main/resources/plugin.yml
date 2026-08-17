@@ -6,3 +6,4 @@ commands:
   sell:
     description: Sells all items in inventory
     usage: /<command>
+

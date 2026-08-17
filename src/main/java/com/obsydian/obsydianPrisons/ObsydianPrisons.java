@@ -4,6 +4,7 @@ import com.obsydian.obsydianPrisons.daos.DatabaseManager;
 import com.obsydian.obsydianPrisons.daos.PlayerDataCache;
 import com.obsydian.obsydianPrisons.globaltasks.CleanDirtySync;
 import com.obsydian.obsydianPrisons.managers.PlayerDataManager;
+import com.obsydian.obsydianPrisons.mines.MineRegionManager;
 import com.obsydian.obsydianPrisons.pickaxe.listeners.EnchantMenuListeners;
 import com.obsydian.obsydianPrisons.pickaxe.listeners.JoinPickaxeListener;
 import com.obsydian.obsydianPrisons.pickaxe.listeners.MultiToolListener;
@@ -23,15 +24,16 @@ public final class ObsydianPrisons extends JavaPlugin {
         return instance;
     }
 
-    ConfigManager configManager;
-    DatabaseManager databaseManager;
-    PlayerDataManager playerDataManager;
-
+    private ConfigManager configManager;
+    private DatabaseManager databaseManager;
+    private PlayerDataManager playerDataManager;
+    private MineRegionManager mineRegionManager;
     @Override
     @SuppressWarnings("DataFlowIssue")
     public void onEnable() {
         instance = this;
-
+        mineRegionManager = new MineRegionManager();
+        // TODO Load each external mine configuration directory into mineRegionManager.
         databaseManager = new DatabaseManager(this);
         databaseManager.openConnection()
                 .whenComplete((ignored, error) -> {
@@ -57,7 +59,7 @@ public final class ObsydianPrisons extends JavaPlugin {
         // Event registry
         getServer().getPluginManager().registerEvents(new MultiToolListener(),this);
         getServer().getPluginManager().registerEvents(new JoinPickaxeListener(),this);
-        getServer().getPluginManager().registerEvents(new PickaxeBreakListeners(this),this);
+        getServer().getPluginManager().registerEvents(new PickaxeBreakListeners(this, mineRegionManager),this);
         getServer().getPluginManager().registerEvents(new EnchantMenuListeners(),this);
         getServer().getPluginManager().registerEvents(new ServerJoinListener(this),this);
 
@@ -80,5 +82,8 @@ public final class ObsydianPrisons extends JavaPlugin {
     }
     public PlayerDataManager getPlayerDataManager() {
         return playerDataManager;
+    }
+    public MineRegionManager getMineRegionManager() {
+        return mineRegionManager;
     }
 }

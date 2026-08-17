@@ -11,6 +11,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -31,7 +33,7 @@ public class DatabaseManager {
         this.plugin = plugin;
     }
 
-    public CompletableFuture<Void> openConnection() {
+    public synchronized CompletableFuture<Void> openConnection() {
         if (ready != null) {
             return ready;
         }
@@ -48,7 +50,14 @@ public class DatabaseManager {
 
                 playerDao = DaoManager.createDao(source, PlayerData.class);
                 TableUtils.createTableIfNotExists(source, PlayerData.class);
+                List<PlayerData> players = playerDao.queryForAll();
 
+                for (PlayerData playerData : players) {
+                    PlayerDataCache.instance.put(
+                            playerData.getUuid(),
+                            playerData
+                    );
+                }
             } catch (Exception e) {
                 throw new CompletionException(
                         "Could not initialize the database",
@@ -68,7 +77,7 @@ public class DatabaseManager {
             data = new PlayerData(uuid);
             playerDao.create(data);
         }
-
+        PlayerDataCache.instance.put(uuid, data);
         return data;
     }
 
@@ -76,14 +85,7 @@ public class DatabaseManager {
         return submit(() -> getOrCreatePlayerData(uuid));
     }
 
-    public CompletableFuture<Void> addTokens(UUID uuid, long tokens) {
-        return submit(()-> {
-            PlayerData data = getOrCreatePlayerData(uuid);
-            data.setTokens(data.getTokens() + tokens);
-            playerDao.update(data);
-            return null;
-        });
-    }
+
     public CompletableFuture<Void> setTokens(UUID uuid, long tokens) {
         return submit(()-> {
             PlayerData data = getOrCreatePlayerData(uuid);
@@ -106,6 +108,26 @@ public class DatabaseManager {
                 throw new CompletionException(exception);
             }
         }, executor);
+    }
+
+    public CompletableFuture<Void> flush() {
+        PlayerDataCache playerDataCache = PlayerDataCache.instance;
+        Set<UUID> dirtyPlayers = playerDataCache.getDirtyPlayersSnapshot();
+
+        if (dirtyPlayers.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return submit(()-> {
+            for (UUID uuid : dirtyPlayers) {
+                PlayerData data = playerDataCache.get(uuid);
+                if (data == null) continue;
+
+                playerDao.createOrUpdate(data);
+                playerDataCache.markClean(uuid);
+            }
+            return null;
+        });
     }
 
 

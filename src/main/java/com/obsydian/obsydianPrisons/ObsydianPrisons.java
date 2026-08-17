@@ -1,6 +1,9 @@
 package com.obsydian.obsydianPrisons;
 
 import com.obsydian.obsydianPrisons.daos.DatabaseManager;
+import com.obsydian.obsydianPrisons.daos.PlayerDataCache;
+import com.obsydian.obsydianPrisons.globaltasks.CleanDirtySync;
+import com.obsydian.obsydianPrisons.managers.PlayerDataManager;
 import com.obsydian.obsydianPrisons.pickaxe.listeners.EnchantMenuListeners;
 import com.obsydian.obsydianPrisons.pickaxe.listeners.JoinPickaxeListener;
 import com.obsydian.obsydianPrisons.pickaxe.listeners.MultiToolListener;
@@ -21,6 +24,7 @@ public final class ObsydianPrisons extends JavaPlugin {
 
     ConfigManager configManager;
     DatabaseManager databaseManager;
+    PlayerDataManager playerDataManager;
 
     @Override
     @SuppressWarnings("DataFlowIssue")
@@ -47,15 +51,19 @@ public final class ObsydianPrisons extends JavaPlugin {
         configManager = new ConfigManager(this);
         configManager.setupConfig();
         configManager.loadFromDisk();
+        playerDataManager = new PlayerDataManager(PlayerDataCache.instance);
 
         // Event registry
         getServer().getPluginManager().registerEvents(new MultiToolListener(),this);
         getServer().getPluginManager().registerEvents(new JoinPickaxeListener(),this);
-        getServer().getPluginManager().registerEvents(new PickaxeBreakListeners(),this);
+        getServer().getPluginManager().registerEvents(new PickaxeBreakListeners(this),this);
         getServer().getPluginManager().registerEvents(new EnchantMenuListeners(),this);
 
         // Command registry
         getCommand("sell").setExecutor(new SellCommand());
+
+        // run tasks
+        getServer().getScheduler().scheduleSyncRepeatingTask(this, new CleanDirtySync(this),0, 20 * 60); // Every 60 seconds
     }
 
     @Override
@@ -64,5 +72,11 @@ public final class ObsydianPrisons extends JavaPlugin {
     }
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+    public PlayerDataManager getPlayerDataManager() {
+        return playerDataManager;
     }
 }

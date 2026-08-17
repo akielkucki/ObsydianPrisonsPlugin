@@ -23,6 +23,12 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class PickaxeBreakListeners implements Listener {
+    private ObsydianPrisons plugin;
+    ThreadLocalRandom rand = ThreadLocalRandom.current();
+
+    public PickaxeBreakListeners(ObsydianPrisons plugin) {
+        this.plugin = plugin;
+    }
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
         Location loc = e.getBlock().getLocation();
@@ -40,7 +46,6 @@ public class PickaxeBreakListeners implements Listener {
         );
 
     }
-    ThreadLocalRandom rand = ThreadLocalRandom.current();
     @EventHandler
     public void addDropsToInventory(BlockDropItemEvent e) {
         Player p = e.getPlayer();
@@ -74,6 +79,7 @@ public class PickaxeBreakListeners implements Listener {
                     "+" + tokens + " GEMS",
                     TextColor.color(0x18CB00)
             ).decorate(TextDecoration.BOLD));
+            plugin.getPlayerDataManager().addTokens(p.getUniqueId(), tokens);
         }
         if (p.getInventory().firstEmpty() == -1) {
             if (rand.nextInt(1,10) < 2) {

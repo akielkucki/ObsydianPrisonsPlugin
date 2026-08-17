@@ -1,0 +1,8 @@
+name: ObsydianPrisons
+version: '1.0-SNAPSHOT'
+main: com.obsydian.obsydianPrisons.ObsydianPrisons
+api-version: '1.21'
+commands:
+  sell:
+    description: Sells all items in inventory
+    usage: /<command>

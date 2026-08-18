@@ -57,7 +57,7 @@ public final class ObsydianPrisons extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MultiToolListener(),this);
         getServer().getPluginManager().registerEvents(new JoinPickaxeListener(),this);
         getServer().getPluginManager().registerEvents(new PickaxeBreakListener(this, mineRegionManager),this);
-        getServer().getPluginManager().registerEvents(new EnchantMenuListener(),this);
+        getServer().getPluginManager().registerEvents(new EnchantMenuListener(this),this);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this),this);
 
         // Command registry

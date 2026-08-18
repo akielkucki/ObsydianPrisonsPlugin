@@ -16,6 +16,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
+
 public final class ObsydianPrisons extends JavaPlugin {
     private static final Logger log = LoggerFactory.getLogger(ObsydianPrisons.class);
 
@@ -33,23 +35,11 @@ public final class ObsydianPrisons extends JavaPlugin {
     public void onEnable() {
         instance = this;
         mineRegionManager = new MineRegionManager();
-        // TODO Load each external mine configuration directory into mineRegionManager.
-        databaseManager = new DatabaseManager(this);
-        databaseManager.openConnection()
-                .whenComplete((ignored, error) -> {
-                    if (error == null) {
-                        log.info("Database connection established");
-                        return;
-                    }
-                    log.error("Failed to establish database connection, fix database errors or contact the owner before enabling", error);
+        //Server Specific
+        loadMineDirs();
 
-                    getServer().getScheduler().runTask(
-                            this,
-                            () -> getServer()
-                                    .getPluginManager()
-                                    .disablePlugin(this)
-                    );
-                });
+        databaseManager = new DatabaseManager(this);
+        openDBConnection();
 
         configManager = new ConfigManager(this);
         configManager.setupConfig();
@@ -74,6 +64,7 @@ public final class ObsydianPrisons extends JavaPlugin {
     public void onDisable() {
         databaseManager.close();
     }
+
     public ConfigManager getConfigManager() {
         return configManager;
     }
@@ -85,5 +76,48 @@ public final class ObsydianPrisons extends JavaPlugin {
     }
     public MineRegionManager getMineRegionManager() {
         return mineRegionManager;
+    }
+    private Path resolvePluginsDir() {
+        Path pluginsDirectory = getDataFolder()
+                .toPath()
+                .toAbsolutePath()
+                .getParent();
+
+        if (pluginsDirectory == null) {
+            throw new IllegalStateException(
+                    "Could not determine the plugins directory"
+            );
+        }
+        return pluginsDirectory;
+    }
+    private void loadMineDirs() {
+        Path pluginsDirectory = resolvePluginsDir();
+        Path plotMinesDirectory = pluginsDirectory
+                .resolve("mango-plotmines")
+                .resolve("data");
+
+        Path cataMinesDirectory = pluginsDirectory
+                .resolve("CataMines")
+                .resolve("mines");
+
+        mineRegionManager.loadDirectory(plotMinesDirectory);
+        mineRegionManager.loadDirectory(cataMinesDirectory);
+    }
+    private void openDBConnection() {
+        databaseManager.openConnection()
+                .whenComplete((ignored, error) -> {
+                    if (error == null) {
+                        log.info("Database connection established");
+                        return;
+                    }
+                    log.error("Failed to establish database connection, fix database errors or contact the owner before enabling", error);
+
+                    getServer().getScheduler().runTask(
+                            this,
+                            () -> getServer()
+                                    .getPluginManager()
+                                    .disablePlugin(this)
+                    );
+                });
     }
 }

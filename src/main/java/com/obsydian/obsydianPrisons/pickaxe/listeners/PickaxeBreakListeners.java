@@ -53,7 +53,7 @@ public class PickaxeBreakListeners implements Listener {
     public void addDropsToInventory(BlockDropItemEvent e) {
         Player p = e.getPlayer();
         if (!mineRegionManager.isMineBlock(e.getBlock())) return;
-
+        //TODO: Fix json mine check not working
         List<ItemStack> drops = e.getItems().stream().map(item -> {
             ItemStack tool = p.getInventory().getItemInMainHand();
             ItemStack itemStack = item.getItemStack();

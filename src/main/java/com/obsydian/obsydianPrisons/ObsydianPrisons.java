@@ -11,7 +11,9 @@ import com.obsydian.obsydianPrisons.pickaxe.listeners.MultiToolListener;
 import com.obsydian.obsydianPrisons.pickaxe.listeners.PickaxeBreakListeners;
 import com.obsydian.obsydianPrisons.sell.cfg.ConfigManager;
 import com.obsydian.obsydianPrisons.sell.commands.SellCommand;
+import com.obsydian.obsydianPrisons.server.commands.EnderChestCommand;
 import com.obsydian.obsydianPrisons.server.listeners.ServerJoinListener;
+import com.obsydian.obsydianPrisons.utils.Vault;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,11 @@ public final class ObsydianPrisons extends JavaPlugin {
     @SuppressWarnings("DataFlowIssue")
     public void onEnable() {
         instance = this;
+        if (!Vault.setup(this)) {
+            log.error("Vault is not enabled, disabling plugin");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
         mineRegionManager = new MineRegionManager();
         //Server Specific
         loadMineDirs();
@@ -55,6 +62,7 @@ public final class ObsydianPrisons extends JavaPlugin {
 
         // Command registry
         getCommand("sell").setExecutor(new SellCommand());
+        getCommand("enderchest").setExecutor(new EnderChestCommand());
 
         // run tasks
         getServer().getScheduler().scheduleSyncRepeatingTask(this, new CleanDirtySync(this),0, 20 * 60); // Every 60 seconds
@@ -62,6 +70,7 @@ public final class ObsydianPrisons extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (databaseManager == null) return;
         databaseManager.close();
     }
 

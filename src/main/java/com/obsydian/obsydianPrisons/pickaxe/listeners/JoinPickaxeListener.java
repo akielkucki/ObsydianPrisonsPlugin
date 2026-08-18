@@ -10,6 +10,7 @@ public class JoinPickaxeListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
+        if (p.hasPlayedBefore()) return;
         p.getInventory().addItem(PickaxeUtils.createPickaxeItem(p));
     }
 }

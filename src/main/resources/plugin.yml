@@ -2,8 +2,16 @@ name: ObsydianPrisons
 version: '1.0-SNAPSHOT'
 main: com.obsydian.obsydianPrisons.ObsydianPrisons
 api-version: '1.21'
+depend:
+  - Vault
+  - iConomyUnlocked
 commands:
   sell:
     description: Sells all items in inventory
     usage: /<command>
+  enderchest:
+    description: Opens your ender chest
+    usage: /<command>
+    aliases: [ ec, echest ]
+    
 

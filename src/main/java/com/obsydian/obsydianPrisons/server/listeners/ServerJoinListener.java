@@ -19,8 +19,6 @@ public class ServerJoinListener implements Listener {
         Player p = e.getPlayer();
         p.sendMessage("Welcome to Obsydian Prisons!");
         p.sendMessage("Use /help for a list of commands");
-        plugin.getDatabaseManager().getPlayerData(p.getUniqueId()).thenRun(()-> {
-            log.info("Loaded player data for {}", p.getName());
-        });
+        plugin.getDatabaseManager().getPlayerData(p.getUniqueId()).thenRun(()-> log.info("Loaded player data for {}", p.getName()));
     }
 }

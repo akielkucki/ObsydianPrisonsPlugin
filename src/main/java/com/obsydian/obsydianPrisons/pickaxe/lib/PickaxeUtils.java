@@ -15,9 +15,10 @@ public class PickaxeUtils {
         meta.displayName(Component.text(String.format("%s's Pickaxe", user.getName()))
                 .color(TextColor.color(0x00FF00)));
         meta.setUnbreakable(true);
-       meta.addEnchant(Enchantment.EFFICIENCY, 155, true);
-       var pdc = meta.getPersistentDataContainer();
-       pdc.set(Keys.PICKAXE, PersistentDataType.STRING, user.getUniqueId().toString());
+        meta.addEnchant(Enchantment.EFFICIENCY, 155, true);
+        var pdc = meta.getPersistentDataContainer();
+        pdc.set(Keys.PICKAXE, PersistentDataType.STRING, user.getUniqueId().toString());
+        pdc.set(Keys.TIMESTAMP, PersistentDataType.LONG, System.currentTimeMillis());
         item.setItemMeta(meta);
         return item;
     }

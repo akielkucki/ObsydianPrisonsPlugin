@@ -1,19 +1,19 @@
-package com.obsydian.obsydianPrisons;
+package com.obsydian.obsydianprisons;
 
-import com.obsydian.obsydianPrisons.daos.DatabaseManager;
-import com.obsydian.obsydianPrisons.daos.PlayerDataCache;
-import com.obsydian.obsydianPrisons.globaltasks.CleanDirtySync;
-import com.obsydian.obsydianPrisons.managers.PlayerDataManager;
-import com.obsydian.obsydianPrisons.mines.MineRegionManager;
-import com.obsydian.obsydianPrisons.pickaxe.listeners.EnchantMenuListeners;
-import com.obsydian.obsydianPrisons.pickaxe.listeners.JoinPickaxeListener;
-import com.obsydian.obsydianPrisons.pickaxe.listeners.MultiToolListener;
-import com.obsydian.obsydianPrisons.pickaxe.listeners.PickaxeBreakListeners;
-import com.obsydian.obsydianPrisons.sell.cfg.ConfigManager;
-import com.obsydian.obsydianPrisons.sell.commands.SellCommand;
-import com.obsydian.obsydianPrisons.server.commands.EnderChestCommand;
-import com.obsydian.obsydianPrisons.server.listeners.ServerJoinListener;
-import com.obsydian.obsydianPrisons.utils.Vault;
+import com.obsydian.obsydianprisons.economy.Vault;
+import com.obsydian.obsydianprisons.mine.MineRegionManager;
+import com.obsydian.obsydianprisons.persistence.DatabaseManager;
+import com.obsydian.obsydianprisons.pickaxe.listener.EnchantMenuListener;
+import com.obsydian.obsydianprisons.pickaxe.listener.JoinPickaxeListener;
+import com.obsydian.obsydianprisons.pickaxe.listener.MultiToolListener;
+import com.obsydian.obsydianprisons.pickaxe.listener.PickaxeBreakListener;
+import com.obsydian.obsydianprisons.player.PlayerDataCache;
+import com.obsydian.obsydianprisons.player.PlayerDataFlushTask;
+import com.obsydian.obsydianprisons.player.PlayerDataManager;
+import com.obsydian.obsydianprisons.player.PlayerJoinListener;
+import com.obsydian.obsydianprisons.player.command.EnderChestCommand;
+import com.obsydian.obsydianprisons.selling.SellCommand;
+import com.obsydian.obsydianprisons.selling.SellConfig;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ public final class ObsydianPrisons extends JavaPlugin {
         return instance;
     }
 
-    private ConfigManager configManager;
+    private SellConfig configManager;
     private DatabaseManager databaseManager;
     private PlayerDataManager playerDataManager;
     private MineRegionManager mineRegionManager;
@@ -48,7 +48,7 @@ public final class ObsydianPrisons extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         openDBConnection();
 
-        configManager = new ConfigManager(this);
+        configManager = new SellConfig(this);
         configManager.setupConfig();
         configManager.loadFromDisk();
         playerDataManager = new PlayerDataManager(PlayerDataCache.instance);
@@ -56,16 +56,16 @@ public final class ObsydianPrisons extends JavaPlugin {
         // Event registry
         getServer().getPluginManager().registerEvents(new MultiToolListener(),this);
         getServer().getPluginManager().registerEvents(new JoinPickaxeListener(),this);
-        getServer().getPluginManager().registerEvents(new PickaxeBreakListeners(this, mineRegionManager),this);
-        getServer().getPluginManager().registerEvents(new EnchantMenuListeners(),this);
-        getServer().getPluginManager().registerEvents(new ServerJoinListener(this),this);
+        getServer().getPluginManager().registerEvents(new PickaxeBreakListener(this, mineRegionManager),this);
+        getServer().getPluginManager().registerEvents(new EnchantMenuListener(),this);
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this),this);
 
         // Command registry
         getCommand("sell").setExecutor(new SellCommand());
         getCommand("enderchest").setExecutor(new EnderChestCommand());
 
         // run tasks
-        getServer().getScheduler().scheduleSyncRepeatingTask(this, new CleanDirtySync(this),0, 20 * 60); // Every 60 seconds
+        getServer().getScheduler().scheduleSyncRepeatingTask(this, new PlayerDataFlushTask(this),0, 20 * 60); // Every 60 seconds
     }
 
     @Override
@@ -74,7 +74,7 @@ public final class ObsydianPrisons extends JavaPlugin {
         databaseManager.close();
     }
 
-    public ConfigManager getConfigManager() {
+    public SellConfig getConfigManager() {
         return configManager;
     }
     public DatabaseManager getDatabaseManager() {

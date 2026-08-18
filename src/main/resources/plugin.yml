@@ -1,6 +1,6 @@
 name: ObsydianPrisons
 version: '1.0-SNAPSHOT'
-main: com.obsydian.obsydianPrisons.ObsydianPrisons
+main: com.obsydian.obsydianprisons.ObsydianPrisons
 api-version: '1.21'
 depend:
   - Vault
@@ -14,4 +14,3 @@ commands:
     usage: /<command>
     aliases: [ ec, echest ]
     
-

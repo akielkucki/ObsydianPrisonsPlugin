@@ -36,11 +36,11 @@
                     <relocations>
                         <relocation>
                             <pattern>dev.triumphteam.gui</pattern>
-                            <shadedPattern>com.obsydian.obsydianPrisons.libs.triumphgui</shadedPattern>
+                            <shadedPattern>com.obsydian.obsydianprisons.libs.triumphgui</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>com.j256.ormlite</pattern>
-                            <shadedPattern>com.obsydian.obsydianPrisons.libs.ormlite</shadedPattern>
+                            <shadedPattern>com.obsydian.obsydianprisons.libs.ormlite</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>

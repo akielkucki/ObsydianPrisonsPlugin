@@ -9,8 +9,15 @@ commands:
   sell:
     description: Sells all items in inventory
     usage: /<command>
+    aliases:
+      - sellall
   enderchest:
     description: Opens your ender chest
     usage: /<command>
     aliases: [ ec, echest ]
+  servinf:
+    description: Hardware info
+  start:
+    description: Starts the player on the server
+    usage: /<command>
     

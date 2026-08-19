@@ -30,7 +30,7 @@ public enum PickaxeEnchantment {
             "Blast",
             Material.TNT,
             "Increases the chance to blast nearby mine blocks.",
-            4,
+            2,
             19200,
             null,
             PickaxeKeys.BLAST
@@ -131,16 +131,24 @@ public enum PickaxeEnchantment {
         }
 
         if (bukkitEnchantment != null) {
+            if (level == 0) {
+                item.removeEnchantment(bukkitEnchantment);
+                return;
+            }
             item.addUnsafeEnchantment(bukkitEnchantment, level);
             return;
         }
 
         ItemMeta meta = item.getItemMeta();
-        meta.getPersistentDataContainer().set(
-                persistentKey,
-                PersistentDataType.INTEGER,
-                level
-        );
+        if (level == 0) {
+            meta.getPersistentDataContainer().remove(persistentKey);
+        } else {
+            meta.getPersistentDataContainer().set(
+                    persistentKey,
+                    PersistentDataType.INTEGER,
+                    level
+            );
+        }
         item.setItemMeta(meta);
     }
 

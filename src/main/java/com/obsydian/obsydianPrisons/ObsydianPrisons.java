@@ -12,6 +12,8 @@ import com.obsydian.obsydianprisons.player.PlayerDataFlushTask;
 import com.obsydian.obsydianprisons.player.PlayerDataManager;
 import com.obsydian.obsydianprisons.player.PlayerJoinListener;
 import com.obsydian.obsydianprisons.player.command.EnderChestCommand;
+import com.obsydian.obsydianprisons.player.command.FakeSpecsCommand;
+import com.obsydian.obsydianprisons.player.command.StartCommand;
 import com.obsydian.obsydianprisons.selling.SellCommand;
 import com.obsydian.obsydianprisons.selling.SellConfig;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -63,6 +65,8 @@ public final class ObsydianPrisons extends JavaPlugin {
         // Command registry
         getCommand("sell").setExecutor(new SellCommand());
         getCommand("enderchest").setExecutor(new EnderChestCommand());
+        getCommand("servinf").setExecutor(new FakeSpecsCommand(this));
+        getCommand("start").setExecutor(new StartCommand());
 
         // run tasks
         getServer().getScheduler().scheduleSyncRepeatingTask(this, new PlayerDataFlushTask(this),0, 20 * 60); // Every 60 seconds

@@ -7,6 +7,7 @@ import dev.triumphteam.gui.click.GuiClick;
 import dev.triumphteam.gui.element.GuiItem;
 import dev.triumphteam.gui.paper.Gui;
 import dev.triumphteam.gui.paper.builder.item.ItemBuilder;
+import dev.triumphteam.nova.MutableState;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -15,6 +16,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -37,40 +39,46 @@ public final class EnchantsGui {
 
         return Gui.of(6)
                 .title(text("Pickaxe Enchantments", NamedTextColor.DARK_PURPLE))
-                .statelessComponent(container -> {
-                    var filler = ItemBuilder.from(Material.BLACK_STAINED_GLASS_PANE)
-                            .name(Component.empty())
-                            .asGuiItem();
+                .component(component -> {
 
-                    for (int row = 1; row <= 6; row++) {
-                        for (int column = 1; column <= 9; column++) {
-                            container.setItem(row, column, filler);
+                    final var maximumPreview = component.remember(-1);
+
+                    component.render(container -> {
+                        var filler = ItemBuilder.from(Material.BLACK_STAINED_GLASS_PANE)
+                                .name(Component.empty())
+                                .asGuiItem();
+
+                        for (int row = 1; row <= 6; row++) {
+                            for (int column = 1; column <= 9; column++) {
+                                container.setItem(row, column, filler);
+                            }
                         }
-                    }
 
-                    var accent = ItemBuilder.from(Material.PURPLE_STAINED_GLASS_PANE)
-                            .name(Component.empty())
-                            .glow()
-                            .asGuiItem();
+                        var accent = ItemBuilder.from(Material.PURPLE_STAINED_GLASS_PANE)
+                                .name(Component.empty())
+                                .glow()
+                                .asGuiItem();
 
-                    for (int column = 2; column <= 8; column++) {
-                        container.setItem(1, column, accent);
-                        container.setItem(6, column, accent);
-                    }
+                        for (int column = 2; column <= 8; column++) {
+                            container.setItem(1, column, accent);
+                            container.setItem(6, column, accent);
+                        }
 
-                    PickaxeEnchantment[] enchantments = PickaxeEnchantment.values();
-                    for (int index = 0; index < enchantments.length; index++) {
-                        PickaxeEnchantment enchantment = enchantments[index];
-                        container.setItem(
-                                3,
-                                ENCHANT_COLUMNS[index],
-                                enchantItem(pickaxe, enchantment, tokenBalance)
-                        );
-                    }
+                        PickaxeEnchantment[] enchantments = PickaxeEnchantment.values();
+                        for (int index = 0; index < enchantments.length; index++) {
+                            PickaxeEnchantment enchantment = enchantments[index];
+                            container.setItem(
+                                    3,
+                                    ENCHANT_COLUMNS[index],
+                                    enchantItem(pickaxe, enchantment, tokenBalance, index, maximumPreview)
+                            );
+                        }
 
-                    container.setItem(5, 4, balanceItem(tokenBalance));
-                    container.setItem(5, 5, pickaxeItem(pickaxe));
-                    container.setItem(5, 6, closeItem());
+                        container.setItem(5, 4, balanceItem(tokenBalance));
+                        container.setItem(5, 5, pickaxeItem(pickaxe));
+                        container.setItem(5, 6, closeItem());
+                    });
+
                 })
                 .build();
     }
@@ -78,11 +86,17 @@ public final class EnchantsGui {
     private GuiItem<Player, ItemStack> enchantItem(
             ItemStack pickaxe,
             PickaxeEnchantment enchantment,
-            long tokenBalance
+            long tokenBalance,
+            int index, MutableState<@NotNull Integer> maximumPreview
     ) {
         int currentLevel = enchantment.level(pickaxe);
         boolean maxed = currentLevel >= enchantment.maxLevel();
+        boolean previewMaximum = maximumPreview.get() == index;
+
+        int previewLevels = previewMaximum ? levelsToBuy(enchantment,currentLevel,tokenBalance,true) : 1;
+        long displayedPrice = maxed || previewLevels == 0 ? 0 : totalPrice(enchantment, currentLevel, previewLevels);
         long nextPrice = maxed ? 0 : enchantment.priceForLevel(currentLevel + 1);
+        long sellPrice = enchantment.priceForLevel(currentLevel) / 2;
 
         List<Component> lore = new ArrayList<>();
         lore.add(text(enchantment.description(), NamedTextColor.DARK_GRAY)
@@ -97,10 +111,20 @@ public final class EnchantsGui {
 
         if (maxed) {
             lore.add(text("  MAXIMUM LEVEL REACHED", NamedTextColor.GOLD));
+        } else if (previewMaximum) {
+            lore.add(line(
+                    "Max Price (" + NUMBER_FORMAT.format(previewLevels) + " levels): ",
+                    NUMBER_FORMAT.format(displayedPrice) + " tokens"
+            ));
         } else {
-            lore.add(line("Next Price: ", NUMBER_FORMAT.format(nextPrice) + " tokens"));
+            lore.add(line(
+                    "Next Price: ",
+                    NUMBER_FORMAT.format(displayedPrice) + " tokens"
+            ));
         }
-
+        if (currentLevel > 0) {
+            lore.add(line("Sell Price: ", NUMBER_FORMAT.format(sellPrice) + " tokens"));
+        }
         lore.add(line("Token Balance: ", NUMBER_FORMAT.format(tokenBalance)));
         lore.add(Component.empty());
 
@@ -110,6 +134,10 @@ public final class EnchantsGui {
             lore.add(text("Shift-Left-Click", NamedTextColor.GREEN)
                     .append(text(" to purchase max levels", NamedTextColor.GRAY)));
         }
+        if (currentLevel > 0) {
+            lore.add(text("Right-Click", NamedTextColor.RED)
+                    .append(text(" to sell one level", NamedTextColor.GRAY)));
+        }
 
         return ItemBuilder.from(enchantment.icon())
                 .name(text(enchantment.displayName(), NamedTextColor.LIGHT_PURPLE)
@@ -117,11 +145,13 @@ public final class EnchantsGui {
                 .lore(lore)
                 .flags(ItemFlag.HIDE_ATTRIBUTES)
                 .glow(currentLevel > 0)
-                .asGuiItem((player, context) -> handlePurchase(
+                .asGuiItem((player, context) -> handleEnchantClick(
                         player,
                         context,
                         pickaxe,
-                        enchantment
+                        enchantment,
+                        index,
+                        maximumPreview
                 ));
     }
 
@@ -158,50 +188,119 @@ public final class EnchantsGui {
                 .asGuiItem((player, context) -> context.guiView().close());
     }
 
-    private void handlePurchase(
+    private void handleEnchantClick(
             Player player,
             ClickContext context,
             ItemStack pickaxe,
-            PickaxeEnchantment enchantment
+            PickaxeEnchantment enchantment,
+            int enchantmentIndex,
+            MutableState<Integer> maximumPreview
     ) {
-        boolean purchaseMaximum = context.guiClick() == GuiClick.SHIFT_LEFT;
-        if (context.guiClick() != GuiClick.LEFT && !purchaseMaximum) {
-            return;
-        }
+        GuiClick click = context.guiClick();
 
+        if (click != GuiClick.LEFT
+                && click != GuiClick.SHIFT_LEFT
+                && click != GuiClick.RIGHT) return;
+
+        try {
+            if (click == GuiClick.RIGHT) {
+                sellLevel(player, pickaxe, enchantment);
+                return;
+            }
+
+            if (click == GuiClick.SHIFT_LEFT
+                    && maximumPreview.get() != enchantmentIndex) {
+                maximumPreview.update(previous -> enchantmentIndex);
+                return;
+            }
+
+            purchaseLevels(
+                    player,
+                    pickaxe,
+                    enchantment,
+                    click == GuiClick.SHIFT_LEFT
+            );
+        } catch (IllegalStateException exception) {
+            failure(
+                    player,
+                    "Your player data is still loading. Please try again."
+            );
+        }
+    }
+
+    private void purchaseLevels(
+            Player player,
+            ItemStack pickaxe,
+            PickaxeEnchantment enchantment,
+            boolean purchaseMaximum
+    ) {
         int currentLevel = enchantment.level(pickaxe);
         if (currentLevel >= enchantment.maxLevel()) {
             failure(player, enchantment.displayName() + " is already maxed.");
             return;
         }
 
-        try {
-            long balance = playerDataManager.getTokens(player.getUniqueId());
-            int levelsToBuy = levelsToBuy(enchantment, currentLevel, balance, purchaseMaximum);
+        long balance = playerDataManager.getTokens(player.getUniqueId());
+        int levelsToBuy = levelsToBuy(
+                enchantment,
+                currentLevel,
+                balance,
+                purchaseMaximum
+        );
 
-            if (levelsToBuy == 0) {
-                failure(player, "You do not have enough tokens for this level.");
-                return;
-            }
-
-            long price = totalPrice(enchantment, currentLevel, levelsToBuy);
-            playerDataManager.removeTokens(player.getUniqueId(), price);
-            enchantment.setLevel(pickaxe, currentLevel + levelsToBuy);
-
-            player.sendMessage(
-                    text("Purchased ", NamedTextColor.GRAY)
-                            .append(text(NUMBER_FORMAT.format(levelsToBuy), NamedTextColor.GREEN))
-                            .append(text(levelsToBuy == 1 ? " level of " : " levels of ", NamedTextColor.GRAY))
-                            .append(text(enchantment.displayName(), NamedTextColor.LIGHT_PURPLE))
-                            .append(text(" for " + NUMBER_FORMAT.format(price) + " tokens.", NamedTextColor.GRAY))
-            );
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.35f);
-            player.updateInventory();
-
-            create(player, pickaxe).open(player);
-        } catch (IllegalStateException exception) {
-            failure(player, "Your player data is still loading. Please try again.");
+        if (levelsToBuy == 0) {
+            failure(player, "You do not have enough tokens for this level.");
+            return;
         }
+
+        long price = totalPrice(enchantment, currentLevel, levelsToBuy);
+        playerDataManager.removeTokens(player.getUniqueId(), price);
+        enchantment.setLevel(pickaxe, currentLevel + levelsToBuy);
+
+        player.sendMessage(
+                text("Purchased ", NamedTextColor.GRAY)
+                        .append(text(NUMBER_FORMAT.format(levelsToBuy), NamedTextColor.GREEN))
+                        .append(text(levelsToBuy == 1 ? " level of " : " levels of ", NamedTextColor.GRAY))
+                        .append(text(enchantment.displayName(), NamedTextColor.LIGHT_PURPLE))
+                        .append(text(" for " + NUMBER_FORMAT.format(price) + " tokens.", NamedTextColor.GRAY))
+        );
+        finishTransaction(player, pickaxe);
+    }
+
+    private void sellLevel(
+            Player player,
+            ItemStack pickaxe,
+            PickaxeEnchantment enchantment
+    ) {
+        int currentLevel = enchantment.level(pickaxe);
+        if (currentLevel == 0) {
+            failure(player, "You do not have any levels to sell.");
+            return;
+        }
+
+        long sellPrice = enchantment.priceForLevel(currentLevel) / 2;
+        playerDataManager.addTokens(player.getUniqueId(), sellPrice);
+        enchantment.setLevel(pickaxe, currentLevel - 1);
+
+        player.sendMessage(
+                text("Sold ", NamedTextColor.GRAY)
+                        .append(text("1", NamedTextColor.GREEN))
+                        .append(text(" level of ", NamedTextColor.GRAY))
+                        .append(text(enchantment.displayName(), NamedTextColor.LIGHT_PURPLE))
+                        .append(text(" for " + NUMBER_FORMAT.format(sellPrice) + " tokens.", NamedTextColor.GRAY))
+        );
+        finishTransaction(player, pickaxe);
+    }
+
+    private void finishTransaction(Player player, ItemStack pickaxe) {
+        player.playSound(
+                player.getLocation(),
+                Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
+                0.8f,
+                1.35f
+        );
+        player.updateInventory();
+        create(player, pickaxe).open(player);
     }
 
     private int levelsToBuy(
@@ -218,7 +317,6 @@ public final class EnchantsGui {
             if (nextPrice > balance - runningPrice) {
                 break;
             }
-
             runningPrice += nextPrice;
             levels++;
 

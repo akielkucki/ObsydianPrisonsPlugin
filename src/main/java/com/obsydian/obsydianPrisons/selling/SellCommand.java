@@ -1,6 +1,7 @@
 package com.obsydian.obsydianprisons.selling;
 
 import com.obsydian.obsydianprisons.ObsydianPrisons;
+import com.obsydian.obsydianprisons.economy.Vault;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -16,6 +17,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +28,7 @@ public class SellCommand implements CommandExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String @NotNull [] args) {
         if (!(sender instanceof Player player)) return false;
         if (lastSoldTimestamp.containsKey(player.getUniqueId()) && System.currentTimeMillis() - lastSoldTimestamp.get(player.getUniqueId()) < 10000) {
+            long timeLeft = 10000- (System.currentTimeMillis() - lastSoldTimestamp.get(player.getUniqueId()));
             player.sendMessage(Component.text(
                     "────────────────────────────",
                     NamedTextColor.DARK_GRAY
@@ -38,7 +41,7 @@ public class SellCommand implements CommandExecutor {
 
             player.sendMessage(Component.empty()
                     .append(Component.text("You can sell again in ", NamedTextColor.GRAY))
-                    .append(Component.text("10 seconds", NamedTextColor.YELLOW)
+                    .append(Component.text(timeLeft/1000+"s", NamedTextColor.YELLOW)
                             .decorate(TextDecoration.BOLD))
                     .append(Component.text(".", NamedTextColor.GRAY)));
 
@@ -106,6 +109,9 @@ public class SellCommand implements CommandExecutor {
         ));
 
         player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
+
+        Vault.getEconomy().deposit(plugin.getName(), player.getUniqueId(), new BigDecimal(runningTotal));
+
         lastSoldTimestamp.put(player.getUniqueId(), System.currentTimeMillis());
         return true;
     }

@@ -7,6 +7,8 @@ import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 import com.obsydian.obsydianprisons.player.PlayerData;
 import com.obsydian.obsydianprisons.player.PlayerDataCache;
+import com.obsydian.obsydianprisons.player.WarpCache;
+import com.obsydian.obsydianprisons.player.models.Warp;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Files;
@@ -27,6 +29,7 @@ public class DatabaseManager {
                     .factory());
     private ConnectionSource source;
     private Dao<PlayerData, UUID> playerDao;
+    private Dao<Warp, String> warpDao;
     private CompletableFuture<Void> ready;
     private final JavaPlugin plugin;
 
@@ -80,6 +83,15 @@ public class DatabaseManager {
         }
         PlayerDataCache.instance.put(uuid, data);
         return data;
+    }
+    private Warp getOrCreateWarp(String warpName) throws SQLException {
+        Warp warp = warpDao.queryForId(warpName);
+
+        if (warp == null) {
+            throw new IllegalArgumentException(String.format("Warp %s does not exist", warpName));
+        }
+        // TODO: Implement warps
+        return warp;
     }
 
     public CompletableFuture<PlayerData> getPlayerData(UUID uuid) {

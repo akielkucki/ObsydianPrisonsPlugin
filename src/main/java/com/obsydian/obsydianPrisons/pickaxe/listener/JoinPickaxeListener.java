@@ -12,5 +12,6 @@ public class JoinPickaxeListener implements Listener {
         Player p = e.getPlayer();
         if (p.hasPlayedBefore()) return;
         p.getInventory().addItem(PickaxeUtils.createPickaxeItem(p));
+
     }
 }

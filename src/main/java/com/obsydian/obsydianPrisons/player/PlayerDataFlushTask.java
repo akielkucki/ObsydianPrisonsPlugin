@@ -25,9 +25,6 @@ public final class PlayerDataFlushTask implements Runnable {
                     // Debug
                     log.error("Could not flush player data", error);
                     return null;
-                }).thenRun(() -> {
-                    // Debug
-                    log.info("Flushed player data");
                 });
     }
 }

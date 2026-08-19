@@ -4,6 +4,7 @@ import com.obsydian.obsydianprisons.ObsydianPrisons;
 import com.obsydian.obsydianprisons.mine.MineRegionManager;
 import com.obsydian.obsydianprisons.pickaxe.PickaxeEnchantment;
 import com.obsydian.obsydianprisons.pickaxe.PickaxeKeys;
+import com.obsydian.obsydianprisons.pickaxe.handlers.EnchantHandlers;
 import com.obsydian.obsydianprisons.pickaxe.models.Pickaxe;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
@@ -28,11 +29,13 @@ import java.util.concurrent.ThreadLocalRandom;
 public class PickaxeBreakListener implements Listener {
     private final ObsydianPrisons plugin;
     private final MineRegionManager mineRegionManager;
+    private final EnchantHandlers enchantHandlers;
     ThreadLocalRandom rand = ThreadLocalRandom.current();
 
     public PickaxeBreakListener(ObsydianPrisons plugin, MineRegionManager mineRegionManager) {
         this.plugin = plugin;
         this.mineRegionManager = mineRegionManager;
+        enchantHandlers = new EnchantHandlers(mineRegionManager);
     }
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
@@ -62,15 +65,16 @@ public class PickaxeBreakListener implements Listener {
 
         Pickaxe pickaxe = new Pickaxe(tool);
         Block block = e.getBlock();
-        //TODO: Fix json mine check not working
+
         List<ItemStack> drops = e.getItems().stream().map(item -> {
             ItemStack itemStack = item.getItemStack();
-            handleFortune(item, pickaxe, tool, itemStack);
-
+            enchantHandlers.handleFortune(item, pickaxe, tool, itemStack);
             return itemStack;
         }).toList();
-        handleBlastEnchant(pickaxe, block.getLocation(), p);
-        int tokens = handleGemFortune(pickaxe);
+
+        enchantHandlers.handleBlastEnchant(pickaxe, block.getLocation(), p);
+        enchantHandlers.handleJackhammerEnchant(pickaxe, block.getLocation(), p);
+        int tokens = enchantHandlers.handleGemFortune(pickaxe, e.getBlockState().getType());
         if (tokens > 0) {
             p.sendMessage(Component.text("You found ").color(TextColor.color(0x22FF0C)).decorate(TextDecoration.BOLD)
                     .append(Component.text(tokens + " tokens!").color(TextColor.color(0x22FF0C))).decorate(TextDecoration.BOLD));
@@ -123,69 +127,6 @@ public class PickaxeBreakListener implements Listener {
                 .getServer()
                 .getScheduler()
                 .scheduleSyncDelayedTask(plugin, display::remove,ticks);
-    }
-    private final Set<UUID> automatedBreaks = new HashSet<>();
-    public void handleBlastEnchant(Pickaxe pickaxe, Location location, Player player) {
-        if (pickaxe.getEnchantmentLevel(PickaxeEnchantment.BLAST) == 0) return;
-        if (automatedBreaks.contains(player.getUniqueId())) return; //avoid recursion
-        try {
-            automatedBreaks.add(player.getUniqueId());
-            final int BLAST_RADIUS = pickaxe.getEnchantmentLevel(PickaxeEnchantment.BLAST);
-
-            World world = location.getWorld();
-            int centerX = location.getBlockX();
-            int centerY = location.getBlockY();
-            int centerZ = location.getBlockZ();
-            int radiusSquared = BLAST_RADIUS * BLAST_RADIUS;
-
-            world.spawnParticle(Particle.EXPLOSION, location, 10, 0.2, 0.2, 0.2, 0.01);
-            world.playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
-
-            for (int x = -BLAST_RADIUS; x <= BLAST_RADIUS; x++) {
-                for (int y = -BLAST_RADIUS; y <= BLAST_RADIUS; y++) {
-                    for (int z = -BLAST_RADIUS; z <= BLAST_RADIUS; z++) {
-                        int dSquared = (x * x) + (y * y) + (z * z);
-                        if (dSquared > radiusSquared) {
-                            continue;
-                        }
-                        Block block = world.getBlockAt(centerX + x, centerY + y, centerZ + z);
-                        if (block.getType().isAir()) continue;
-                        if (!mineRegionManager.isMineBlock(block)) continue;
-                        player.breakBlock(block);
-
-                    }
-                }
-            }
-        } finally {
-            automatedBreaks.remove(player.getUniqueId());
-        }
-
-    }
-    private void handleFortune(Item item, Pickaxe pickaxe, ItemStack tool, ItemStack itemStack) {
-        if (item.getItemStack().getType().isSolid()) {
-            if (pickaxe.getEnchantmentLevel(PickaxeEnchantment.FORTUNE) > 0) {
-                int level = tool.getEnchantmentLevel(Enchantment.FORTUNE);
-                itemStack.setAmount(itemStack.getAmount() + (int) (rand.nextFloat() * (level + 1)));
-            }
-        }
-    }
-    private int handleGemFortune(Pickaxe pickaxe) {
-
-            int gemFortuneLevel = pickaxe.getEnchantmentLevel(PickaxeEnchantment.GEM_FORTUNE);
-
-            double chance = Math.min(
-                    0.06,
-                    0.05 + gemFortuneLevel * 0.0005
-            );
-
-            if (rand.nextDouble()*5.0 < chance) {
-                int minimum = 10 + gemFortuneLevel;
-                int maximum = 20 + gemFortuneLevel * 2;
-
-
-                return rand.nextInt(minimum, maximum + 1);
-            } else return 0;
-
     }
 
 }

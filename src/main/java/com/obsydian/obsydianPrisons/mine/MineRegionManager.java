@@ -24,32 +24,40 @@ public final class MineRegionManager {
     private List<MineCuboid> regions = List.of();
     private final Gson gson = new Gson();
 
-    public void loadDirectory(Path directory) {
-        if (!Files.isDirectory(directory)) {
-            throw new IllegalArgumentException(
-                    "Mine directory does not exist: " + directory
-            );
-        }
+    public void loadDirectories(Collection<Path> directories) {
         List<MineCuboid> loaded = new ArrayList<>();
 
+        for (Path directory : directories) {
+            loadDirectoryInto(directory, loaded);
+        }
+
+        regions = List.copyOf(loaded);
+        log.info("Published {} total regions", regions.size());
+    }
+
+    private void loadDirectoryInto(
+            Path directory,
+            List<MineCuboid> loaded
+    ) {
+        if (!Files.isDirectory(directory)) {
+            log.warn("Mine directory does not exist: {}", directory);
+            return;
+        }
+
         try (Stream<Path> paths = Files.list(directory)) {
-            paths.filter(Files::isRegularFile)
-                    .forEach(path -> {
-                        if (isYamlFile(path)) {
-                            loadYamlFile(path, loaded);
-                        } else if (isJsonFile(path)) {
-                            loadJsonFile(path, loaded);
-                        }
-                    });
+            paths.filter(Files::isRegularFile).forEach(path -> {
+                if (isYamlFile(path)) {
+                    loadYamlFile(path, loaded);
+                } else if (isJsonFile(path)) {
+                    loadJsonFile(path, loaded);
+                }
+            });
         } catch (IOException exception) {
             throw new UncheckedIOException(
                     "Could not read mine directory: " + directory,
                     exception
             );
         }
-
-        regions = List.copyOf(loaded);
-        log.info("Loaded {} mine regions from {}", regions.size(), directory);
     }
 
     private void loadYamlFile(Path path, List<MineCuboid> loaded) {
@@ -159,14 +167,21 @@ public final class MineRegionManager {
                         ? mine.uuid().toString()
                         : path.getFileName().toString();
 
+
                 loaded.add(MineCuboid.from(
                         name,
                         first,
                         second
                 ));
+                log.info(
+                        "Added mine {}; loaded size={}, manager={}",
+                        name,
+                        loaded.size(),
+                        System.identityHashCode(this)
+                );
             }
-        } catch (IOException | JsonParseException ignored) {
-            log.warn("Could not parse mine file {} likely not a mine file", path);
+        } catch (IOException | JsonParseException exception) {
+            log.warn("Could not parse mine file {}", path, exception);
         }
     }
 
@@ -190,6 +205,7 @@ public final class MineRegionManager {
     }
 
     public List<MineCuboid> getRegions() {
+
         return regions;
     }
 

@@ -3,19 +3,19 @@ package com.obsydian.obsydianprisons;
 import com.obsydian.obsydianprisons.economy.Vault;
 import com.obsydian.obsydianprisons.mine.MineRegionManager;
 import com.obsydian.obsydianprisons.persistence.DatabaseManager;
-import com.obsydian.obsydianprisons.pickaxe.listener.EnchantMenuListener;
-import com.obsydian.obsydianprisons.pickaxe.listener.JoinPickaxeListener;
-import com.obsydian.obsydianprisons.pickaxe.listener.MultiToolListener;
-import com.obsydian.obsydianprisons.pickaxe.listener.PickaxeBreakListener;
+import com.obsydian.obsydianprisons.pickaxe.listener.*;
 import com.obsydian.obsydianprisons.player.PlayerDataCache;
 import com.obsydian.obsydianprisons.player.PlayerDataFlushTask;
 import com.obsydian.obsydianprisons.player.PlayerDataManager;
-import com.obsydian.obsydianprisons.player.PlayerJoinListener;
-import com.obsydian.obsydianprisons.player.command.EnderChestCommand;
-import com.obsydian.obsydianprisons.player.command.FakeSpecsCommand;
-import com.obsydian.obsydianprisons.player.command.StartCommand;
-import com.obsydian.obsydianprisons.selling.SellCommand;
+import com.obsydian.obsydianprisons.player.listener.ChatListener;
+import com.obsydian.obsydianprisons.player.listener.PlayerConnectionsListener;
+import com.obsydian.obsydianprisons.player.command.*;
+import com.obsydian.obsydianprisons.player.listener.RefreshServerListEvent;
+import com.obsydian.obsydianprisons.player.placeholders.ObsydianExpansion;
+import com.obsydian.obsydianprisons.selling.AutoSellService;
 import com.obsydian.obsydianprisons.selling.SellConfig;
+import com.obsydian.obsydianprisons.selling.SellService;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +35,8 @@ public final class ObsydianPrisons extends JavaPlugin {
     private DatabaseManager databaseManager;
     private PlayerDataManager playerDataManager;
     private MineRegionManager mineRegionManager;
+    private AutoSellService autoSellService;
+    private SellService sellService;
     @Override
     @SuppressWarnings("DataFlowIssue")
     public void onEnable() {
@@ -56,18 +58,34 @@ public final class ObsydianPrisons extends JavaPlugin {
         configManager.loadFromDisk();
         playerDataManager = new PlayerDataManager(PlayerDataCache.instance);
 
+        autoSellService = new AutoSellService(this);
+        sellService = new SellService(this, configManager);
+
+        // PAPI
+        if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new ObsydianExpansion(this).register();
+        }
         // Event registry
         getServer().getPluginManager().registerEvents(new MultiToolListener(),this);
         getServer().getPluginManager().registerEvents(new JoinPickaxeListener(),this);
         getServer().getPluginManager().registerEvents(new PickaxeBreakListener(this, mineRegionManager),this);
         getServer().getPluginManager().registerEvents(new EnchantMenuListener(this),this);
-        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this),this);
+        getServer().getPluginManager().registerEvents(new PlayerConnectionsListener(this),this);
+        getServer().getPluginManager().registerEvents(new MineEvents(this),this);
+        getServer().getPluginManager().registerEvents(new RefreshServerListEvent(),this);
+        getServer().getPluginManager().registerEvents(new ChatListener(this),this);
 
         // Command registry
-        getCommand("sell").setExecutor(new SellCommand());
+        getCommand("sell").setExecutor(new SellCommand(this));
+        getCommand("autosell").setExecutor(new AutoSellCommand(this));
         getCommand("enderchest").setExecutor(new EnderChestCommand());
         getCommand("servinf").setExecutor(new FakeSpecsCommand(this));
         getCommand("start").setExecutor(new StartCommand());
+        getCommand("warp").setExecutor(new WarpCommand());
+        getCommand("warp").setTabCompleter(new WarpCommand());
+        getCommand("setwarp").setExecutor(new SetWarpCommand(this));
+        getCommand("delwarp").setExecutor(new DeleteWarpCommand(this));
+        getCommand("setmultiplier").setExecutor(new SetMultiplierCommand(this));
 
         // run tasks
         getServer().getScheduler().scheduleSyncRepeatingTask(this, new PlayerDataFlushTask(this),0, 20 * 60); // Every 60 seconds
@@ -76,6 +94,7 @@ public final class ObsydianPrisons extends JavaPlugin {
     @Override
     public void onDisable() {
         if (databaseManager == null) return;
+        databaseManager.flush();
         databaseManager.close();
     }
 
@@ -133,5 +152,11 @@ public final class ObsydianPrisons extends JavaPlugin {
                                     .disablePlugin(this)
                     );
                 });
+    }
+    public AutoSellService getAutoSellService() {
+        return autoSellService;
+    }
+    public SellService getSellService() {
+        return sellService;
     }
 }

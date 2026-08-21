@@ -20,7 +20,8 @@ public class StartCommand implements CommandExecutor {
             return true;
         }
         var pdc = player.getPersistentDataContainer();
-        if (pdc.has(PickaxeKeys.TIMESTAMP, PersistentDataType.LONG)) {
+        if (pdc.has(PickaxeKeys.TIMESTAMP, PersistentDataType.LONG)
+                && !player.hasPermission("obsydianprisons.bypasspickaxe")) {
             if (System.currentTimeMillis() < pdc.get(PickaxeKeys.TIMESTAMP, PersistentDataType.LONG)) {
                 player.sendMessage(Component.text(String.format(
                         "You already have a pickaxe, you may use this command again on %tF", pdc.get(PickaxeKeys.TIMESTAMP, PersistentDataType.LONG)

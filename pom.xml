@@ -77,6 +77,10 @@
             <id>codemc-creatorfromhell</id>
             <url>https://repo.codemc.io/repository/creatorfromhell/</url>
         </repository>
+        <repository>
+            <id>placeholderapi</id>
+            <url>https://repo.helpch.at/releases</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -105,6 +109,18 @@
             <groupId>net.milkbowl.vault</groupId>
             <artifactId>VaultUnlockedAPI</artifactId>
             <version>2.17</version><!-- Validate this is the most recent version from the CI -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.lukemango</groupId>
+            <artifactId>plotmines</artifactId>
+            <version>1.0.8</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>me.clip</groupId>
+            <artifactId>placeholderapi</artifactId>
+            <version>2.12.3</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

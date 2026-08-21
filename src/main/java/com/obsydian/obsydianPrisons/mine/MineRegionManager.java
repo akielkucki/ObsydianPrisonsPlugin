@@ -21,7 +21,10 @@ import java.util.stream.Stream;
 
 public final class MineRegionManager {
     private static final Logger log = LoggerFactory.getLogger(MineRegionManager.class);
+    private final Map<UUID, MineCuboid> plotMineRegions = new HashMap<>();
+    private final List<MineCuboid> configuredRegions = List.of();
     private List<MineCuboid> regions = List.of();
+
     private final Gson gson = new Gson();
 
     public void loadDirectories(Collection<Path> directories) {
@@ -33,6 +36,14 @@ public final class MineRegionManager {
 
         regions = List.copyOf(loaded);
         log.info("Published {} total regions", regions.size());
+    }
+    public void addOrUpdatePlotMine(UUID mineId, MineCuboid region) {
+        plotMineRegions.put(mineId, region);
+        publishRegions();
+    }
+    public void removePlotMine(UUID mineId) {
+        plotMineRegions.remove(mineId);
+        publishRegions();
     }
 
     private void loadDirectoryInto(
@@ -119,30 +130,38 @@ public final class MineRegionManager {
 
         return new Location(world, section.getDouble("x"), section.getDouble("y"), section.getDouble("z"), (float) section.getDouble("yaw"), (float) section.getDouble("pitch"));
     }
-    private void loadJsonFile(
+    private boolean loadJsonFile(
             Path path,
             List<MineCuboid> loaded
     ) {
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            MineData[] mines =
-                    gson.fromJson(reader, MineData[].class);
+            MineData[] mines = gson.fromJson(reader, MineData[].class);
 
             if (mines == null) {
                 log.warn("JSON file contains no mines: {}", path);
-                return;
+                return false;
             }
 
             for (MineData mine : mines) {
-                if (mine == null ||
-                        mine.minimum() == null ||
-                        mine.maximum() == null) {
+                if (mine == null
+                        || mine.minimum() == null
+                        || mine.maximum() == null) {
                     log.warn("Skipping invalid mine in {}", path);
                     continue;
                 }
 
-                World world = Bukkit.getWorld(
-                        mine.minimum().world()
-                );
+                if (!Objects.equals(
+                        mine.minimum().world(),
+                        mine.maximum().world()
+                )) {
+                    log.warn(
+                            "Skipping mine {} because its corners use different worlds",
+                            mine.uuid()
+                    );
+                    continue;
+                }
+
+                World world = Bukkit.getWorld(mine.minimum().world());
 
                 if (world == null) {
                     log.warn(
@@ -153,12 +172,12 @@ public final class MineRegionManager {
                     continue;
                 }
 
-                Location first = MineCuboid.parseMineLocation(
+                Location minimum = MineCuboid.parseMineLocation(
                         mine.minimum(),
                         world
                 );
 
-                Location second = MineCuboid.parseMineLocation(
+                Location maximum = MineCuboid.parseMineLocation(
                         mine.maximum(),
                         world
                 );
@@ -167,21 +186,13 @@ public final class MineRegionManager {
                         ? mine.uuid().toString()
                         : path.getFileName().toString();
 
-
-                loaded.add(MineCuboid.from(
-                        name,
-                        first,
-                        second
-                ));
-                log.info(
-                        "Added mine {}; loaded size={}, manager={}",
-                        name,
-                        loaded.size(),
-                        System.identityHashCode(this)
-                );
+                loaded.add(MineCuboid.from(name, minimum, maximum));
             }
+
+            return true;
         } catch (IOException | JsonParseException exception) {
             log.warn("Could not parse mine file {}", path, exception);
+            return false;
         }
     }
 
@@ -203,7 +214,16 @@ public final class MineRegionManager {
                         )
                 );
     }
+    private void publishRegions() {
+        List<MineCuboid> combined = new ArrayList<>(
+                configuredRegions.size() + plotMineRegions.size()
+        );
 
+        combined.addAll(configuredRegions);
+        combined.addAll(plotMineRegions.values());
+
+        regions = List.copyOf(combined);
+    }
     public List<MineCuboid> getRegions() {
 
         return regions;

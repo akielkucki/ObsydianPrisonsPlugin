@@ -21,8 +21,8 @@ public enum PickaxeEnchantment {
             "Gem Fortune",
             Material.AMETHYST_SHARD,
             "Increases the amount of gems found while mining.",
-            250,
-            125,
+            100,
+            50,
             null,
             PickaxeKeys.GEM_FORTUNE
     ),
@@ -49,7 +49,7 @@ public enum PickaxeEnchantment {
             Material.GOLDEN_PICKAXE,
             "Increases how quickly your pickaxe breaks blocks.",
             250,
-            75,
+            5,
             Enchantment.EFFICIENCY,
             null
     ),
@@ -57,7 +57,7 @@ public enum PickaxeEnchantment {
             "Minestreak",
             Material.BLAZE_POWDER,
             "Increases the chance to activate a streak while continuously mining.",
-            250,
+            20,
             200,
             null,
             PickaxeKeys.MINESTREAK
@@ -70,6 +70,7 @@ public enum PickaxeEnchantment {
     private final long baseCost;
     private final Enchantment bukkitEnchantment;
     private final NamespacedKey persistentKey;
+
 
     PickaxeEnchantment(
             String displayName,
@@ -87,6 +88,7 @@ public enum PickaxeEnchantment {
         this.baseCost = baseCost;
         this.bukkitEnchantment = bukkitEnchantment;
         this.persistentKey = persistentKey;
+
     }
 
     public String displayName() {

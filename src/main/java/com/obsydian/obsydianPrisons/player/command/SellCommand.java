@@ -1,7 +1,9 @@
-package com.obsydian.obsydianprisons.selling;
+package com.obsydian.obsydianprisons.player.command;
 
 import com.obsydian.obsydianprisons.ObsydianPrisons;
 import com.obsydian.obsydianprisons.economy.Vault;
+import com.obsydian.obsydianprisons.selling.SellConfig;
+import com.obsydian.obsydianprisons.selling.SellService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -18,12 +20,17 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class SellCommand implements CommandExecutor {
     Map<UUID, Long> lastSoldTimestamp = new HashMap<>();
+    private final ObsydianPrisons plugin;
+    public SellCommand(ObsydianPrisons plugin) {
+        this.plugin = plugin;
+    }
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String @NotNull [] args) {
         if (!(sender instanceof Player player)) return false;
@@ -60,28 +67,14 @@ public class SellCommand implements CommandExecutor {
             ));
             return true;
         }
-        Inventory inv = player.getInventory();
-
-        ObsydianPrisons plugin = ObsydianPrisons.getInstance();
-        SellConfig configManager = plugin.getConfigManager();
-
-        double runningTotal = 0;
-        int totalSoldItems = 0;
-
-        for (int slot = 0; slot < inv.getSize(); slot++) {
-            ItemStack item = inv.getItem(slot);
-
-            if (item == null || item.getType().isAir()) continue;
-            if (!configManager.canSell(item.getType())) continue;
-
-            runningTotal += configManager.getWorth(item);
-            totalSoldItems += item.getAmount();
-
-            inv.setItem(slot, null);
-        }
-        if (totalSoldItems == 0) {
-            player.sendMessage(Component.text("You have nothing to sell!", NamedTextColor.RED));
-            return true;
+        SellService sellService = plugin.getSellService();
+        UUID playerId = player.getUniqueId();
+        SellService.SaleResult sale = sellService.sellInventory(player);
+        double multiplier = plugin.getPlayerDataManager()
+                .getPlayerData(playerId)
+                .getMultiplier();
+        if (!Double.isFinite(multiplier) || multiplier <= 0) {
+            multiplier = 1.0;
         }
         player.sendMessage(Component.empty()
                 .append(Component.text("───────── ", NamedTextColor.DARK_GRAY))
@@ -92,25 +85,30 @@ public class SellCommand implements CommandExecutor {
         player.sendMessage(Component.empty()
                 .append(Component.text("  Items sold: ", NamedTextColor.GRAY))
                 .append(Component.text(
-                        String.format("%,d", totalSoldItems),
+                        String.format("%,d", sale.items()),
                         NamedTextColor.WHITE
                 )));
 
         player.sendMessage(Component.empty()
                 .append(Component.text("  Money earned: ", NamedTextColor.GRAY))
                 .append(Component.text(
-                        String.format("$%,.2f", runningTotal),
+                        String.format("$%,.2f", sale.value()),
                         NamedTextColor.GREEN
+                ).decorate(TextDecoration.BOLD)));
+
+        player.sendMessage(Component.empty()
+                .append(Component.text("  Sell multiplier: ", NamedTextColor.GRAY))
+                .append(Component.text(
+                        String.format("%.2fx", multiplier),
+                        NamedTextColor.GOLD
                 ).decorate(TextDecoration.BOLD)));
 
         player.sendMessage(Component.text(
                 "────────────────────────────",
                 NamedTextColor.DARK_GRAY
         ));
-
         player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
 
-        Vault.getEconomy().deposit(plugin.getName(), player.getUniqueId(), new BigDecimal(runningTotal));
 
         lastSoldTimestamp.put(player.getUniqueId(), System.currentTimeMillis());
         return true;

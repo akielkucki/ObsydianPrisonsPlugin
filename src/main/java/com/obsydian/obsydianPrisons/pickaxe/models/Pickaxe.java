@@ -1,6 +1,7 @@
 package com.obsydian.obsydianprisons.pickaxe.models;
 
 import com.obsydian.obsydianprisons.pickaxe.PickaxeEnchantment;
+import com.obsydian.obsydianprisons.pickaxe.PickaxeKeys;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Optional;
@@ -22,6 +23,11 @@ public class Pickaxe {
 
     public ItemStack getItem() {
         return item;
+    }
+    public static boolean isPickaxe(ItemStack item) {
+        if (item == null || item.getType().isAir()) return false;
+        var pdc = item.getPersistentDataContainer();
+        return pdc.has(PickaxeKeys.PICKAXE);
     }
 
 }

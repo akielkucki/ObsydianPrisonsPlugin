@@ -11,7 +11,6 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.BlockIterator;
 import org.bukkit.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +47,7 @@ public class EnchantHandlers {
             int centerZ = location.getBlockZ();
             int radiusSquared = BLAST_RADIUS * BLAST_RADIUS;
 
-            world.spawnParticle(Particle.EXPLOSION, location, 10, 0.2, 0.2, 0.2, 0.01);
+            world.spawnParticle(Particle.EXPLOSION, location, 2, 0.2, 0.2, 0.2, 0.01);
             world.playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
 
             for (int x = -BLAST_RADIUS; x <= BLAST_RADIUS; x++) {
@@ -59,7 +58,7 @@ public class EnchantHandlers {
                             continue;
                         }
                         Block block = world.getBlockAt(centerX + x, centerY + y, centerZ + z);
-                        if (block.getType().isAir()) continue;
+                        if (block.getType().isAir() || block.getType() == Material.BEDROCK) continue;
                         if (!mineRegionManager.isMineBlock(block)) continue;
                         player.breakBlock(block);
 
@@ -220,9 +219,6 @@ public class EnchantHandlers {
                 PickaxeEnchantment.GEM_FORTUNE
         );
 
-        if (level <= 0) {
-            return 0;
-        }
 
         double blockMultiplier = getBlockValue(blockBroken);
 

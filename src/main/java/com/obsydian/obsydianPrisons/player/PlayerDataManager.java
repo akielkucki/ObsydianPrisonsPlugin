@@ -1,5 +1,7 @@
 package com.obsydian.obsydianprisons.player;
 
+import com.obsydian.obsydianprisons.player.models.Settings;
+
 import java.util.UUID;
 
 public final class PlayerDataManager {
@@ -29,7 +31,9 @@ public final class PlayerDataManager {
 
         return newBalance;
     }
-
+    public PlayerData getPlayerData(UUID uuid) {
+        return requirePlayerData(uuid);
+    }
     public long removeTokens(UUID uuid, long amount) {
         if (amount < 0) {
             throw new IllegalArgumentException(
@@ -67,5 +71,14 @@ public final class PlayerDataManager {
         }
 
         return data;
+    }
+    public void applySettings(UUID playerId, Settings settings) {
+        var playerData = requirePlayerData(playerId);
+        playerData.setSettings(settings.serialize());
+        playerDataCache.markDirty(playerId);
+    }
+    public void removePlayerData(UUID uuid) {
+        if (!playerDataCache.contains(uuid)) return;
+        playerDataCache.remove(uuid);
     }
 }

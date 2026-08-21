@@ -6,6 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
+import java.util.UUID;
+
 @DatabaseTable(tableName = "warps")
 public class Warp {
     @DatabaseField(id = true, unique = true, canBeNull = false, columnName = "warp_name")
@@ -38,8 +40,11 @@ public class Warp {
         this.pitch = pitch;
     }
     public Warp() {}
+    public String getWarpName() {
+        return warpName;
+    }
     public Location getLocation() {
-        World world = Bukkit.getWorld(worldUuid);
+        World world = Bukkit.getWorld(UUID.fromString(worldUuid));
 
         if (world == null) {
             throw new IllegalStateException(

@@ -11,6 +11,11 @@ commands:
     usage: /<command>
     aliases:
       - sellall
+  autosell:
+    description: Autosell all mined items
+    usage: /<command>
+    aliases:
+      - as
   enderchest:
     description: Opens your ender chest
     usage: /<command>
@@ -20,4 +25,26 @@ commands:
   start:
     description: Starts the player on the server
     usage: /<command>
+  warp:
+    description: Teleports you to a warp
+    usage: /<command> <name>
+  setwarp:
+    description: Creates a warp at your current location
+    usage: /<command> <name>
+  delwarp:
+    description: Deletes a warp
+    usage: /<command> <name>
+  setmultiplier:
+    description: Set a player's sell multiplier
+    usage: /<command> <number> <player>
+permissions:
+  obsydianprisons.warp.*:
+    description: Allows access to all warps
+    default: true
+  obsydianprisons.setwarp:
+    description: Allows creation of warps
+    default: op
+  obsydianprisons.delwarp:
+    description: Allows deletion of warps
+    default: op
     

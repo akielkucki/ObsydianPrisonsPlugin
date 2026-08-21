@@ -2,6 +2,7 @@ package com.obsydian.obsydianprisons.player;
 
 import com.obsydian.obsydianprisons.player.models.Warp;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,8 +21,11 @@ public class WarpCache {
     public void clear() {
         warps.clear();
     }
-    public Map<String, Warp> getWarps() {
+    public Map<String, Warp> getWarpsMap() {
         return warps;
+    }
+    public List<String> getWarpNames() {
+        return List.copyOf(warps.keySet());
     }
     public boolean contains(String name) {
         return warps.containsKey(name);

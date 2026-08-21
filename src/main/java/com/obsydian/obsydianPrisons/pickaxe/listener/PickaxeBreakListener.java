@@ -77,11 +77,14 @@ public class PickaxeBreakListener implements Listener {
         int tokens = enchantHandlers.handleGemFortune(pickaxe, e.getBlockState().getType());
         if (tokens > 0) {
             p.sendMessage(Component.text("You found ").color(TextColor.color(0x22FF0C)).decorate(TextDecoration.BOLD)
-                    .append(Component.text(tokens + " tokens!").color(TextColor.color(0x22FF0C))).decorate(TextDecoration.BOLD));
+                    .append(Component.text(tokens + " gems!").color(TextColor.color(0x22FF0C))).decorate(TextDecoration.BOLD));
             plugin.getPlayerDataManager().addTokens(p.getUniqueId(), tokens);
         }
-
-        p.getInventory().addItem(drops.toArray(new ItemStack[0]));
+        if (plugin.getAutoSellService().isEnabled(p.getUniqueId())) {
+            plugin.getAutoSellService().appendItems(drops.toArray(new ItemStack[0]),p.getUniqueId());
+        } else {
+            p.getInventory().addItem(drops.toArray(new ItemStack[0]));
+        }
 
 
         if (p.getInventory().firstEmpty() == -1) {
